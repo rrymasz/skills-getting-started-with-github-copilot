@@ -77,6 +77,19 @@ document.addEventListener("DOMContentLoaded", () => {
             span.textContent = email;
             li.appendChild(span);
 
+            const del = document.createElement("button");
+            del.className = "delete-btn";
+            del.title = "Wyrejestruj uczestnika";
+            del.type = "button";
+            del.innerHTML = "✖";
+            del.addEventListener("click", async (e) => {
+              e.stopPropagation();
+              if (confirm(`Usuń ${email} z zajęć \"${name}\"?`)) {
+                await unregisterParticipant(name, email);
+              }
+            });
+            li.appendChild(del);
+
             ul.appendChild(li);
           });
         }
@@ -138,6 +151,38 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error("Error signing up:", error);
     }
   });
+
+  // Unregister a participant from an activity
+  async function unregisterParticipant(activityName, email) {
+    try {
+      const response = await fetch(
+        `/activities/${encodeURIComponent(activityName)}/signup?email=${encodeURIComponent(email)}`,
+        { method: "DELETE" }
+      );
+
+      const result = await response.json().catch(() => ({}));
+
+      if (response.ok) {
+        messageDiv.textContent = result.message || "Unregistered successfully.";
+        messageDiv.className = "message success";
+        await fetchActivities(); // odśwież listę by pokazać zmiany
+      } else {
+        messageDiv.textContent = result.detail || "Failed to unregister.";
+        messageDiv.className = "message error";
+      }
+
+      messageDiv.classList.remove("hidden");
+
+      setTimeout(() => {
+        messageDiv.classList.add("hidden");
+      }, 5000);
+    } catch (error) {
+      messageDiv.textContent = "Failed to unregister. Please try again.";
+      messageDiv.className = "message error";
+      messageDiv.classList.remove("hidden");
+      console.error("Error unregistering:", error);
+    }
+  }
 
   // Initialize app
   fetchActivities();
