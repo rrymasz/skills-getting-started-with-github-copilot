@@ -47,6 +47,32 @@
 
     <!-- Zastępujemy zewnętrzny app.js wbudowanym skryptem odpowiedzialnym za renderowanie kart z uczestnikami -->
     <script>
+      // Unregister a participant from an activity
+      async function unregisterParticipant(activity, email) {
+        try {
+          const res = await fetch('/activities/' + encodeURIComponent(activity) + '/signup?email=' + encodeURIComponent(email), {
+            method: 'DELETE'
+          });
+          const data = await res.json().catch(() => ({}));
+          const message = document.getElementById('message');
+          if (!res.ok) {
+            message.className = 'message error';
+            message.textContent = data.detail || 'Błąd przy wyrejestrowaniu.';
+          } else {
+            message.className = 'message success';
+            message.textContent = data.message || 'Wyrejestrowano pomyślnie.';
+            await loadActivities();
+          }
+          message.classList.remove('hidden');
+          setTimeout(() => message.classList.add('hidden'), 4000);
+        } catch (err) {
+          const message = document.getElementById('message');
+          message.className = 'message error';
+          message.textContent = 'Błąd połączenia.';
+          message.classList.remove('hidden');
+        }
+      }
+
       // Pobierz i wyrenderuj aktywności oraz wypełnij select
       async function loadActivities() {
         const res = await fetch('/activities');
@@ -118,6 +144,19 @@
               span.className = 'participant-email';
               span.textContent = email;
               li.appendChild(span);
+
+              const del = document.createElement('button');
+              del.className = 'delete-btn';
+              del.type = 'button';
+              del.title = 'Wyrejestruj uczestnika';
+              del.innerHTML = '✖';
+              del.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                if (confirm(`Usuń ${email} z zajęć \"${name}\"?`)) {
+                  await unregisterParticipant(name, email);
+                }
+              });
+              li.appendChild(del);
 
               ul.appendChild(li);
             });
